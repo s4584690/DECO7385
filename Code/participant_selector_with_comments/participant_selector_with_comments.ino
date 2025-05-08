@@ -23,6 +23,11 @@
 #define ADD_BUTTON_PIN 25 //3     
 #define SUB_BUTTON_PIN 26 //4     
 
+// 定义压力传感器引脚
+// #define PRESSURE_1_PIN 32
+// #define PRESSURE_2_PIN 33
+// #define PRESSURE_3_PIN 34
+
 // 初始化步进电机库
 Stepper stepper(STEPS_PER_REVOLUTION, IN1, IN2, IN3, IN4);
 
@@ -84,6 +89,11 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(ADD_BUTTON_PIN, INPUT_PULLUP);
   pinMode(SUB_BUTTON_PIN, INPUT_PULLUP);
+
+  // 设置压力传感器输入
+  // pinMode(PRESSURE_1_PIN, INPUT);
+  // pinMode(PRESSURE_2_PIN, INPUT);
+  // pinMode(PRESSURE_3_PIN, INPUT);
   
   // 软件初始化：假定上电时步进电机物理上位于 0°
   currentSteps = 0;
@@ -109,6 +119,29 @@ void setup() {
 }
 
 void loop() {
+  // 把开始结束按钮改成压力传感器
+  /* -------- 以下部分为新代码 -------- */
+  static bool lastPressureState = false;
+  bool current PressureState = allPressureSensorsPressed();
+
+  if (currentPressureState && !lastPressureState) {
+    if (!running) {
+      Serial.println("All 3 sensors are being pressed. System restarts.");
+      restartSystem();
+    } else {
+      Serial.println("All 3 sensors are being pressed. System stops and resets.");
+      stopAndReset();
+      running = false;
+    }
+    delay(200); // 消抖
+  }
+  lastPressureState = currentPressureState;
+
+  // 如果系统为结束状态，直接跳过后续所有代码重新判断系统是否开始，直接return
+  if (!running) return;
+  /* -------- 以上部分为新代码 -------- */
+  
+  
   // 如果系统处于停止状态，则等待重启指令
   if (!running) {
     // 等待按钮按下以重新启动（确保按键释放后再启动）
@@ -208,6 +241,13 @@ void updateLedCountdown() {
       }
     }
   }
+}
+
+// 判断是否三个压力传感器都被按下：
+bool allPressureSensorsPressed() {
+  return digitalRead(PRESSURE_1_PIN) == LOW &&
+         digitalRead(PRESSURE_2_PIN) == LOW &&
+         digitalRead(PRESSURE_3_PIN) == LOW;
 }
 
 // 选取参与者：
