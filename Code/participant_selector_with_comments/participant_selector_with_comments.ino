@@ -1,6 +1,12 @@
 #include <Stepper.h>
 #include <math.h>  // 用于 round()
 #include <FastLED.h>
+#include <Wire.h>
+#include <MPU6050_light.h>
+
+MPU6050 mpu1(Wire); // tube1
+MPU6050 mpu2(sw1);  // tube2
+MPU6050 mpu3(sw2);  // tube3
 
 // 定义步进电机接线和步数（28BYJ-48，带齿轮减速共 2048 步）
 #define STEPS_PER_REVOLUTION 2048  
@@ -25,7 +31,7 @@
 
 // 定义压力传感器引脚
 // #define PRESSURE_1_PIN 32
-// #define PRESSURE_2_PIN 33
+// #define PRESSURE_2_PIN 35
 // #define PRESSURE_3_PIN 34
 
 // 初始化步进电机库
@@ -91,9 +97,18 @@ void setup() {
   pinMode(SUB_BUTTON_PIN, INPUT_PULLUP);
 
   // 设置压力传感器输入
-  // pinMode(PRESSURE_1_PIN, INPUT);
-  // pinMode(PRESSURE_2_PIN, INPUT);
-  // pinMode(PRESSURE_3_PIN, INPUT);
+  // pinMode(PRESSURE_1_PIN, INPUT_PULLUP);
+  // pinMode(PRESSURE_2_PIN, INPUT_PULLUP);
+  // pinMode(PRESSURE_3_PIN, INPUTPULLUP);
+
+  // Initialise MPU6050
+  Wire.begin(); //tube1
+  sw1.begin();  // tube2
+  sw2.begin();  // tube3
+  mpu1.begin(); mpu1.calGyroOffsets();
+  mpu2.begin(); mpu2.calGyroOffsets();
+  mpu3.begin(); mpu3.calGyroOffsets();
+  Serial.println("MPU6050 initialisation complete.");
   
   // 软件初始化：假定上电时步进电机物理上位于 0°
   currentSteps = 0;
@@ -121,24 +136,24 @@ void setup() {
 void loop() {
   // 把开始结束按钮改成压力传感器
   /* -------- 以下部分为新代码 -------- */
-  static bool lastPressureState = false;
-  bool current PressureState = allPressureSensorsPressed();
+  // static bool lastPressureState = false;
+  // bool current PressureState = allPressureSensorsPressed();
 
-  if (currentPressureState && !lastPressureState) {
-    if (!running) {
-      Serial.println("All 3 sensors are being pressed. System restarts.");
-      restartSystem();
-    } else {
-      Serial.println("All 3 sensors are being pressed. System stops and resets.");
-      stopAndReset();
-      running = false;
-    }
-    delay(200); // 消抖
-  }
-  lastPressureState = currentPressureState;
+  // if (currentPressureState && !lastPressureState) {
+  //   if (!running) {
+  //     Serial.println("All 3 sensors are being pressed. System restarts.");
+  //     restartSystem();
+  //   } else {
+  //     Serial.println("All 3 sensors are being pressed. System stops and resets.");
+  //     stopAndReset();
+  //     running = false;
+  //   }
+  //   delay(200); // 消抖
+  // }
+  // lastPressureState = currentPressureState;
 
   // 如果系统为结束状态，直接跳过后续所有代码重新判断系统是否开始，直接return
-  if (!running) return;
+  // if (!running) return;
   /* -------- 以上部分为新代码 -------- */
   
   
@@ -377,6 +392,7 @@ unsigned long adjustDelay() {
   unsigned long startTime = millis();
   unsigned long targetDelay = currentDelay;
   
+  // 加减时间按钮
   int addLastState = digitalRead(ADD_BUTTON_PIN);
   int subLastState = digitalRead(SUB_BUTTON_PIN);
   
@@ -393,9 +409,10 @@ unsigned long adjustDelay() {
       return targetDelay;
     }
     
+    /* 按钮加减时间逻辑 */
     int addState = digitalRead(ADD_BUTTON_PIN);
     int subState = digitalRead(SUB_BUTTON_PIN);
-    
+
     if (addState == LOW && addLastState == HIGH) {
       currentDelay += (unsigned long)addIncrement;
       targetDelay = currentDelay;
@@ -433,6 +450,61 @@ unsigned long adjustDelay() {
     
     addLastState = addState;
     subLastState = subState;
+
+    /* 管子控制加减时间逻辑 */
+    unsigned long currentTime = millis();
+    if (currentTime - lastMotionCheck > motionInterval) {
+      mpu.update();
+
+      float ax = mpu.getAccX();
+      float ay = mpu.getAccY();
+      float az = mpu.getAccZ();
+
+      // 横甩：加时间（x 或 y 突变）
+      if (abs(ax) > 1.5 || abs(ay) > 1.5) {
+        currentDelay += (unsigned long)addIncrement;
+        targetDelay = currentDelay;
+        Serial.println("检测到横甩，加时间");
+        addIncrement /= 2.0;
+        delay(100);
+
+        if (activeStrip >= 0) adjustCurrentDelay(currentDelay);
+        lastMotionCheck = currentTime;
+      }
+
+      // 拉扯：减时间（z 值快速负变）
+      if (az < -1.2) {
+        if (currentDelay > subIncrement)
+          currentDelay -= (unsigned long)subIncrement;
+        else
+          currentDelay = 0;
+        targetDelay = currentDelay;
+        Serial.println("检测到拉扯，减时间");
+        subIncrement /= 2.0;
+        delay(100);
+
+        if (activeStrip >= 0) adjustCurrentDelay(currentDelay);
+        lastMotionCheck = currentTime;
+      }
+    }
+
+    // 三个管子同时控制的逻辑，还没完成
+    mpu1.update();
+    mpu2.update();
+    mpu3.update();
+
+    float ax1 = mpu1.getAccX(), ay1 = mpu1.getAccY(), az1 = mpu1.getAccZ();
+    float ax2 = mpu2.getAccX(), ay2 = mpu2.getAccY(), az2 = mpu2.getAccZ();
+    float ax3 = mpu3.getAccX(), ay3 = mpu3.getAccY(), az3 = mpu3.getAccZ();
+
+    if (abs(ax1) > 1.5 || abs(ay1) > 1.5) {
+      // 管子1 甩动，加时间
+    }
+    if (az1 < -1.2) {
+      // 管子1 拉扯，减时间
+    }
+
+    // 管子2 & 管子3 同理
     
     // 在等待期间也需要更新LED倒计时
     updateLedCountdown();
