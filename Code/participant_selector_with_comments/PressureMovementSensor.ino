@@ -380,30 +380,45 @@ void moveToAngle(int targetAngle) {
 }
 
 void updateMotionSensor() {
-  // 假设你已有获取 roll/pitch 的代码
+  if (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+    failedReadCount++;
+    if (failedReadCount >= MAX_FAILED_READS) {
+      dmpReady = false;
+      recoverI2C();
+    }
+    delay(5);
+    return;
+  }
+
+  failedReadCount = 0;
+  lastSuccess = millis();
+
+  // 获取方向数据
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);
   mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-  
+
   float pitch = ypr[1] * 180 / M_PI;
   float roll = ypr[2] * 180 / M_PI;
   unsigned long currentTime = millis();
 
-  if (roll > 20 || roll < -20) {
-    if (!leftRightTriggered && (currentTime - leftRightTriggerTime > TRIGGER_COOLDOWN)) {
-      leftRightTriggered = true;
-      leftRightTriggerTime = currentTime;
-    }
-  } else if (abs(roll) < 5) {
-    leftRightTriggered = false;
+  // 左右触发（ADD）
+  if ((roll > 20 || roll < -20) && (currentTime - leftRightTriggerTime > TRIGGER_COOLDOWN)) {
+    leftRightTriggered = true;
+    leftRightTriggerTime = currentTime;
   }
 
-  if (pitch > 20 || pitch < -20) {
-    if (!forwardBackTriggered && (currentTime - forwardBackTriggerTime > TRIGGER_COOLDOWN)) {
-      forwardBackTriggered = true;
-      forwardBackTriggerTime = currentTime;
-    }
-  } else if (abs(pitch) < 5) {
+  // 前后触发（SUB）
+  if ((pitch > 20 || pitch < -20) && (currentTime - forwardBackTriggerTime > TRIGGER_COOLDOWN)) {
+    forwardBackTriggered = true;
+    forwardBackTriggerTime = currentTime;
+  }
+
+  // 如果回到中立区间，允许再次触发
+  if (abs(roll) < 5) {
+    leftRightTriggered = false;
+  }
+  if (abs(pitch) < 5) {
     forwardBackTriggered = false;
   }
 }
