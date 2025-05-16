@@ -25,6 +25,32 @@ const int PARTICIPANT_2_END   = 239;
 const int PARTICIPANT_3_START = 240;
 const int PARTICIPANT_3_END   = 359;
 
+// ----------- LED 模块用到的实际变量 ------------
+CRGB leds1[LEDS_PER_STRIP];
+CRGB leds2[LEDS_PER_STRIP];
+CRGB leds3[LEDS_PER_STRIP];
+
+int activeStrip = -1;
+int activeLedCount = LEDS_PER_STRIP;
+unsigned long currentDelay = 10000;
+unsigned long timePerLed;
+unsigned long countdownStartTime = 0;
+unsigned long lastCountdownUpdate = 0;
+
+// ----------- MPU6050 用到的实际变量 ------------
+MPU6050 mpu;
+bool dmpReady = false;
+uint16_t packetSize;
+uint8_t fifoBuffer[64];
+
+Quaternion q;
+VectorFloat gravity;
+float ypr[3];
+
+unsigned long lastSuccess = 0;
+unsigned long lastReconnectAttempt = 0;
+int failedReadCount = 0;
+
 // 状态变量
 int previousParticipant = 0;
 int roundNumber = 1;

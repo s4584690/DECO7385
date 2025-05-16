@@ -42,6 +42,19 @@ bool initMPU() {
   return true;
 }
 
+void recoverI2C() {
+  Serial.println("尝试恢复I2C总线...");
+  Wire.end();
+  delay(100);
+  Wire.begin();
+  Wire.setClock(50000);
+  if (initMPU()) {
+    Serial.println("[恢复] I2C总线和MPU6050重连成功！");
+  } else {
+    Serial.println("[失败] I2C总线恢复失败，将继续尝试");
+  }
+}
+
 
 void setupMPU() {
   pinMode(INTERRUPT_PIN, INPUT);
@@ -97,20 +110,6 @@ void reconnectIfNeeded() {
       failedReadCount = 0;
       lastSuccess = millis();
     }
-  }
-}
-
-
-void recoverI2C() {
-  Serial.println("尝试恢复I2C总线...");
-  Wire.end();
-  delay(100);
-  Wire.begin();
-  Wire.setClock(50000);
-  if (initMPU()) {
-    Serial.println("[恢复] I2C总线和MPU6050重连成功！");
-  } else {
-    Serial.println("[失败] I2C总线恢复失败，将继续尝试");
   }
 }
 

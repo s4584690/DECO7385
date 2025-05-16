@@ -51,7 +51,7 @@ void updateActiveStrip() {
     default: return;
   }
   for (int i = 0; i < LEDS_PER_STRIP; i++) {
-    currentStrip[i] = (i < activeLedCount) ? CHSV(i * 10, 255, 255) : CRGB::Black;
+    currentStrip[i] = (i < activeLedCount) ? CRGB(CHSV(i * 10, 255, 255)) : CRGB::Black;
   }
 }
 
