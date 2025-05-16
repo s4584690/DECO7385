@@ -71,7 +71,34 @@ void setupMPU() {
 }
 
 
+void updateRemoteMotionSensor() {
+  while (Serial2.available()) {
+    String msg = Serial2.readStringUntil('\n');
+    msg.trim();  // 清除空白字符
+
+    // 格式应为 "B0:LeftRight"
+    if (!msg.startsWith("B")) return;
+
+    int colonIndex = msg.indexOf(':');
+    if (colonIndex == -1) return;
+
+    int sensorID = msg.substring(1, colonIndex).toInt();
+    String direction = msg.substring(colonIndex + 1);
+
+    if (direction == "LeftRight") {
+      Serial.print("Remote Sensor B"); Serial.print(sensorID); Serial.println(" → LEFT");
+      leftRightTriggered = true;
+    } else if (direction == "ForwardBack") {
+      Serial.print("Remote Sensor B"); Serial.print(sensorID); Serial.println(" → FORWARD");
+      forwardBackTriggered = true;
+    }
+  }
+}
+
+
 void updateMotionSensor() {
+  updateRemoteMotionSensor(); // Receive signal from sub-board
+  
   if (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
     failedReadCount++;
     if (failedReadCount >= MAX_FAILED_READS) {

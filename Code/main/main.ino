@@ -358,10 +358,13 @@ void setup() {
   setupLED();
   setupPressurePins();
 
+  // set up sub-board
+  Serial2.begin(9600, SERIAL_8N1, RX2, TX2);
+  
   currentSteps = 0;
   currentAngle = 0;
 
-  Serial.println("系统初始化完成");
+  Serial.println("System initialisation complete.");
 }
 
 
