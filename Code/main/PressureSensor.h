@@ -3,13 +3,13 @@
 
 #define PRESSURE_1_PIN 32
 #define PRESSURE_2_PIN 33
-#define PRESSURE_3_PIN 34
+#define PRESSURE_3_PIN 19
 
 
 void setupPressurePins() {
-  pinMode(PRESSURE_1_PIN, INPUT);
-  pinMode(PRESSURE_2_PIN, INPUT);
-  pinMode(PRESSURE_3_PIN, INPUT);
+  pinMode(PRESSURE_1_PIN, INPUT_PULLUP);
+  pinMode(PRESSURE_2_PIN, INPUT_PULLUP);
+  pinMode(PRESSURE_3_PIN, INPUT_PULLUP);
 }
 
 

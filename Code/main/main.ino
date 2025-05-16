@@ -60,6 +60,7 @@ int chosenParticipant = 0;
 bool running = true;
 bool motorRunning = false;
 bool systemJustRestarted = false;
+bool startedFirstRound = false;
 
 // 调用模块函数原型
 void selectParticipant();
@@ -328,14 +329,14 @@ void stopAndReset() {
 // restartSystem()：当系统停止后按下 BUTTON_PIN，重置系统状态并复位电机至 0°，然后允许重新开始
 void restartSystem() {
   Serial.println("Restart command received. Restarting system...");
-  //stopAndReset();
   roundNumber = 1;
   previousParticipant = 0;
-  chosenParticipant = 0;  // 重置chosenParticipant
+  chosenParticipant = 0;
   currentSteps = 0;
   currentAngle = 0;
-  running = true;
-  Serial.println("System restarted. Waiting for button press to start Round 1.");
+  running = false;  // 加上：系统进入“等待启动”状态
+  startedFirstRound = false;  // 重要！清除已启动标记
+  Serial.println("System restarted. Waiting for all sensors press to start Round 1.");
 }
 
 
@@ -369,6 +370,18 @@ void loop() {
   reconnectIfNeeded();
   updateMotionSensor();
   updateLedCountdown();
+
+  // 三个压力传感器全部按下，且第一轮尚未开始
+  if (allPressureSensorsPressed() && !startedFirstRound) {
+    Serial.println("All sensors pressed. Starting Round 1.");
+    resetAllStrips();
+    FastLED.show();
+    selectParticipant();
+    startedFirstRound = true;  // 标记第一轮已经开始
+    systemJustRestarted = false;
+    startedFirstRound = true;
+    running = true;  // 开始运行
+  }
 
   if (roundNumber > 1 && running) {
     unsigned long adjustedDelay = adjustDelay();
