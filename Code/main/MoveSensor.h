@@ -76,21 +76,25 @@ void updateRemoteMotionSensor() {
     String msg = Serial2.readStringUntil('\n');
     msg.trim();  // 清除空白字符
 
-    // 格式应为 "B0:LeftRight"
-    if (!msg.startsWith("B")) return;
+    Serial.println("Received raw: " + msg);
+
+    if (msg.length() == 0 || !msg.startsWith("B")) continue;
 
     int colonIndex = msg.indexOf(':');
-    if (colonIndex == -1) return;
+    if (colonIndex == -1) continue;
 
     int sensorID = msg.substring(1, colonIndex).toInt();
     String direction = msg.substring(colonIndex + 1);
+    unsigned long now = millis();
 
-    if (direction == "LeftRight") {
+    if (direction == "LeftRight" && (now - leftRightTriggerTime > TRIGGER_COOLDOWN)) {
       Serial.print("Remote Sensor B"); Serial.print(sensorID); Serial.println(" → LEFT");
       leftRightTriggered = true;
-    } else if (direction == "ForwardBack") {
+      leftRightTriggerTime = now;
+    } else if (direction == "ForwardBack" && (now - forwardBackTriggerTime > TRIGGER_COOLDOWN)) {
       Serial.print("Remote Sensor B"); Serial.print(sensorID); Serial.println(" → FORWARD");
       forwardBackTriggered = true;
+      forwardBackTriggerTime = now;
     }
   }
 }

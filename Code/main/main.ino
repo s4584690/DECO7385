@@ -15,6 +15,10 @@
 #define IN3 12
 #define IN4 13
 
+// 副板串口连接引脚（用于 Serial2）
+#define TXD2 17  // 接副板的 RX 引脚
+#define RXD2 16  // 接副板的 TX 引脚（即使暂时不接收，也需要定义）
+
 Stepper stepper(STEPS_PER_REVOLUTION, IN1, IN2, IN3, IN4);
 
 // 参与者角度定义
@@ -359,7 +363,7 @@ void setup() {
   setupPressurePins();
 
   // set up sub-board
-  Serial2.begin(9600, SERIAL_8N1, RX2, TX2);
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
   
   currentSteps = 0;
   currentAngle = 0;
