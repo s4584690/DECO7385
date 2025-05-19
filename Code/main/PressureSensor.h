@@ -29,6 +29,16 @@ void checkPressureStatus() {
     if (digitalRead(PRESSURE_2_PIN) == LOW) Serial.println("PRESSURE 2 pressed");
     if (digitalRead(PRESSURE_3_PIN) == LOW) Serial.println("PRESSURE 3 pressed");
   }
+
+  extern CRGB leds1[LEDS_PER_STRIP];
+  extern CRGB leds2[LEDS_PER_STRIP];
+  extern CRGB leds3[LEDS_PER_STRIP];
+
+  fill_solid(leds1, LEDS_PER_STRIP, digitalRead(PRESSURE_1_PIN) == LOW ? CRGB::Green : CRGB::Black);
+  fill_solid(leds2, LEDS_PER_STRIP, digitalRead(PRESSURE_2_PIN) == LOW ? CRGB::Green : CRGB::Black);
+  fill_solid(leds3, LEDS_PER_STRIP, digitalRead(PRESSURE_3_PIN) == LOW ? CRGB::Green : CRGB::Black);
+
+  FastLED.show();
 }
 
 
