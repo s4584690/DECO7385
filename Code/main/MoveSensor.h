@@ -58,11 +58,8 @@ void recoverI2C() {
 
 
 void setupMPU() {
-  Wire.begin();
-  i2cSetTimeout((i2c_t*)Wire.__getI2C(), 30000);  // 设置I2C超时时间为30ms，防止卡死
-
   pinMode(INTERRUPT_PIN, INPUT);
-  
+
   if (!initMPU()) {
     Serial.println("MPU6050初始化失败！尝试重新连接...");
     delay(1000);

@@ -127,6 +127,8 @@ void selectParticipant() {
   Serial.println("\n----- RESULT -----");
   Serial.print("Selected Participant: ");
   Serial.println(selectedParticipant);
+  Serial.print("EVENT:SELECTED_P");
+  Serial.println(selectedParticipant);
   Serial.print("Final Angle: ");
   Serial.print(currentAngle);
   Serial.println(" degrees");
@@ -381,6 +383,7 @@ void loop() {
 
   // 三个压力传感器全部按下，且第一轮尚未开始
   if (allPressureSensorsPressed() && !startedFirstRound) {
+    Serial.println("EVENT:SYSTEM_START");
     Serial.println("All sensors pressed. Starting Round 1.");
     resetAllStrips();
     FastLED.show();
