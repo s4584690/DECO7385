@@ -3,7 +3,6 @@
 
 #include "MPU6050_6Axis_MotionApps20.h"
 #include <Wire.h>
-#include "esp32-hal-i2c.h"
 
 #define INTERRUPT_PIN 15
 
@@ -27,6 +26,8 @@ unsigned long leftRightTriggerTime = 0;
 unsigned long forwardBackTriggerTime = 0;
 const unsigned long TRIGGER_COOLDOWN = 2000;
 
+bool mpuPermanentlyFailed = false;
+
 
 bool initMPU() {
   mpu.reset();
@@ -44,15 +45,36 @@ bool initMPU() {
 }
 
 void recoverI2C() {
-  Serial.println("尝试恢复I2C总线...");
+  Serial.println("尝试彻底重启 I2C 总线...");
+
+  // 强制拉低SCL/SDA几次，释放挂死的I2C设备
+  pinMode(22, OUTPUT);  // SDA
+  pinMode(21, OUTPUT);  // SCL
+  for (int i = 0; i < 9; i++) {
+    digitalWrite(21, LOW);
+    delayMicroseconds(5);
+    digitalWrite(21, HIGH);
+    delayMicroseconds(5);
+  }
+
+  // 恢复为输入
+  pinMode(21, INPUT);
+  pinMode(22, INPUT);
+
+  // 软重启Wire库
   Wire.end();
   delay(100);
-  Wire.begin();
+  Wire.begin(50000);
   Wire.setClock(50000);
+
   if (initMPU()) {
-    Serial.println("[恢复] I2C总线和MPU6050重连成功！");
+    Serial.println("[恢复成功] I2C 总线和 MPU6050 已重连");
+    dmpReady = true;
+    failedReadCount = 0;
+    lastSuccess = millis();
   } else {
-    Serial.println("[失败] I2C总线恢复失败，将继续尝试");
+    Serial.println("[失败] I2C 设备仍无法连接");
+    dmpReady = false;
   }
 }
 
@@ -72,6 +94,21 @@ void setupMPU() {
   }
   Serial.println("MPU6050初始化成功！");
   lastSuccess = millis();
+}
+
+
+bool safeReadMPU(unsigned long timeout = 30) {
+  unsigned long start = millis();
+  while (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+    if (millis() - start > timeout) {
+      Serial.println("MPU读取超时，跳出阻塞！");
+      failedReadCount++;
+      return false;
+    }
+    delay(1); // 避免 busy-loop
+  }
+  failedReadCount = 0;
+  return true;
 }
 
 
@@ -107,20 +144,22 @@ void updateRemoteMotionSensor() {
 void updateMotionSensor() {
   updateRemoteMotionSensor(); // Receive signal from sub-board
   
-  if (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-    failedReadCount++;
+  if (!safeReadMPU()) {
     if (failedReadCount >= MAX_FAILED_READS) {
+      Serial.println("[严重] MPU 多次失败，将不再访问该模块");
+      mpuPermanentlyFailed = true;  // 标记永久失效
       dmpReady = false;
-      recoverI2C();
     }
-    delay(5);
     return;
   }
+
   failedReadCount = 0;
   lastSuccess = millis();
+
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);
   mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+
   float pitch = ypr[1] * 180 / M_PI;
   float roll = ypr[2] * 180 / M_PI;
   unsigned long now = millis();

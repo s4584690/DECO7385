@@ -1,9 +1,9 @@
 #ifndef PRESSURESENSOR_H
 #define PRESSURESENSOR_H
 
-#define PRESSURE_1_PIN 32
+#define PRESSURE_1_PIN 19
 #define PRESSURE_2_PIN 33
-#define PRESSURE_3_PIN 19
+#define PRESSURE_3_PIN 32
 
 
 void setupPressurePins() {
