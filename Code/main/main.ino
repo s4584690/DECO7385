@@ -360,6 +360,7 @@ void setup() {
 
   setupMPU();
   setupLED();
+  flashAllStrips(); // 系统启动后闪烁蓝光两次
   setupPressurePins();
 
   // set up sub-board

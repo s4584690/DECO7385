@@ -106,4 +106,20 @@ void adjustCurrentDelay(unsigned long newDelay) {
 }
 
 
+// 闪烁蓝光两次以显示系统启动
+void flashAllStrips(CRGB color = CRGB::Blue, int times = 2, int delayMs = 300) {
+  for (int t = 0; t < times; t++) {
+    fill_solid(leds1, LEDS_PER_STRIP, color);
+    fill_solid(leds2, LEDS_PER_STRIP, color);
+    fill_solid(leds3, LEDS_PER_STRIP, color);
+    FastLED.show();
+    delay(delayMs);
+
+    resetAllStrips();
+    FastLED.show();
+    delay(delayMs);
+  }
+}
+
+
 #endif

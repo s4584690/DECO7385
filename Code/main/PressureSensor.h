@@ -30,6 +30,7 @@ void checkPressureStatus() {
     if (digitalRead(PRESSURE_3_PIN) == LOW) Serial.println("PRESSURE 3 pressed");
   }
 
+  // 当有压力传感器处于被按下状态时，对应的灯条被点亮
   extern CRGB leds1[LEDS_PER_STRIP];
   extern CRGB leds2[LEDS_PER_STRIP];
   extern CRGB leds3[LEDS_PER_STRIP];
